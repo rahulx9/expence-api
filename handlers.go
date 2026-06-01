@@ -1,10 +1,20 @@
 package main
 
 import (
+	"time"
+
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
 func registerRoutes(r *gin.Engine, store *Store) {
+	// allow all origins for now (development)
+	r.Use(cors.New(cors.Config{
+		AllowOrigins: []string{"*"},
+		AllowMethods: []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowHeaders: []string{"Origin", "Content-Type", "Accept", "Authorization"},
+		MaxAge:       12 * time.Hour,
+	}))
 	r.POST("/data", func(c *gin.Context) {
 		var item Item
 		if err := c.ShouldBindJSON(&item); err != nil {
