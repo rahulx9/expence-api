@@ -1,22 +1,23 @@
 package main
 
 import (
-	"fmt"
 	"log"
-	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
-func helloHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	fmt.Fprintln(w, "Hello, world")
-}
-
 func main() {
-	http.HandleFunc("/", helloHandler)
+	store := NewStore("data.json")
+	if err := store.Load(); err != nil {
+		log.Fatalf("Failed to load store: %v", err)
+	}
+
+	r := gin.Default()
+	registerRoutes(r, store)
 
 	addr := ":8080"
 	log.Printf("Starting server on %s", addr)
-	if err := http.ListenAndServe(addr, nil); err != nil {
+	if err := r.Run(addr); err != nil {
 		log.Fatalf("Server failed: %v", err)
 	}
 }
