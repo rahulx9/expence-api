@@ -25,6 +25,8 @@ func registerRoutes(r *gin.Engine, store *Store) {
 			c.JSON(500, gin.H{"error": "Failed to save item"})
 			return
 		}
+
+		c.JSON(201, item)
 	})
 
 	r.GET("/data", func(c *gin.Context) {
