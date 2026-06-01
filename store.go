@@ -4,12 +4,14 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
+	"strconv"
 	"sync"
 )
 
 type Item struct {
-	ID    string `json:"id" binding:"required"`
-	Value string `json:"value" binding:"required"`
+	ID     string `json:"id"`
+	Source string `json:"source" binding:"required"`
+	Name   string `json:"name" binding:"required"`
 }
 
 type Store struct {
@@ -20,6 +22,8 @@ type Store struct {
 
 var ErrDuplicateID = errors.New("duplicate id")
 
+var nextID int
+
 func NewStore(path string) *Store {
 	return &Store{Path: path}
 }
@@ -27,6 +31,7 @@ func NewStore(path string) *Store {
 func (s *Store) Load() error {
 	if _, err := os.Stat(s.Path); os.IsNotExist(err) {
 		s.Items = []Item{}
+		nextID = 1
 		return nil
 	} else if err != nil {
 		return err
@@ -39,10 +44,23 @@ func (s *Store) Load() error {
 
 	if len(data) == 0 {
 		s.Items = []Item{}
+		nextID = 1
 		return nil
 	}
 
-	return json.Unmarshal(data, &s.Items)
+	if err := json.Unmarshal(data, &s.Items); err != nil {
+		return err
+	}
+
+	maxID := 0
+	for _, item := range s.Items {
+		id, err := strconv.Atoi(item.ID)
+		if err == nil && id > maxID {
+			maxID = id
+		}
+	}
+	nextID = maxID + 1
+	return nil
 }
 
 func (s *Store) Save() error {
@@ -57,11 +75,8 @@ func (s *Store) AddItem(item Item) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	for _, existing := range s.Items {
-		if existing.ID == item.ID {
-			return ErrDuplicateID
-		}
-	}
+	item.ID = strconv.Itoa(nextID)
+	nextID++
 
 	s.Items = append(s.Items, item)
 	return s.Save()
